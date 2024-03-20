@@ -6,52 +6,55 @@ on:
       - adding-nodejs-tests
 
 jobs:
-  deploy-staging:
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - name: Configure SSH
-        run: |
-          echo "Configuring SSH to reach staging instance."
-          mkdir -p ~/.ssh
-          echo "${{ secrets.ADLNET_STAGING_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan "${{ secrets.ADLNET_STAGING_HOST }}" >> ~/.ssh/known_hosts
+  # deploy-staging:
+  #   runs-on: ubuntu-latest
+  #   environment: staging
+  #   steps:
+  #     - name: Configure SSH
+  #       run: |
+  #         echo "Configuring SSH to reach staging instance."
+  #         mkdir -p ~/.ssh
+  #         echo "${{ secrets.ADLNET_STAGING_SSH_KEY }}" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan "${{ secrets.ADLNET_STAGING_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy code on Staging
-        run: |
-          echo "SSH into staging machine."
-          ssh ${{ secrets.ADLNET_STAGING_HOST_USER }}@${{ secrets.ADLNET_STAGING_HOST }} "   
-          cd ${{ secrets.ADLNET_STAGING_PROJECT_DIR }}
-          echo 'Pulling Latest Code from Repository...'
-          git pull
-          echo 'Rebuilding Docker Containers..'
-          sudo docker-compose stop
-          sudo docker-compose build --no-cache
-          sudo docker-compose up -d
-          echo 'deployed successfully on server' "
+  #     - name: Deploy code on Staging
+  #       run: |
+  #         echo "SSH into staging machine."
+  #         ssh ${{ secrets.ADLNET_STAGING_HOST_USER }}@${{ secrets.ADLNET_STAGING_HOST }} "   
+  #         cd ${{ secrets.ADLNET_STAGING_PROJECT_DIR }}
+  #         echo 'Pulling Latest Code from Repository...'
+  #         git pull
+  #         echo 'Rebuilding Docker Containers..'
+  #         sudo docker-compose stop
+  #         sudo docker-compose build --no-cache
+  #         sudo docker-compose up -d
+  #         echo 'deployed successfully on server' "
 
   cypress-testing:
     name: Cypress run
     environment: staging
-    needs:
-      - deploy-staging
+    # needs:
+    #   - deploy-staging
     runs-on: ubuntu-22.04
     env:
       LRS_USERNAME: ${{ secrets.ADLNET_STAGING_LRS_USERNAME }}
       LRS_PASSWORD: ${{ secrets.ADLNET_STAGING_LRS_PASSWORD }}
       LRS_HOST_URL: ${{ secrets.ADLNET_STAGING_LRS_HOST_URL }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        
       - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
-          working-directory: tests/cypress
+          working-directory: ./tests/cypress
 
   conformance-testing:
     runs-on: ubuntu-latest
     environment: staging
-    needs:
-      - deploy-staging
+    # needs:
+    #   - deploy-staging
     steps:
       - name: Setup NodeJS
         uses: actions/setup-node@v3
